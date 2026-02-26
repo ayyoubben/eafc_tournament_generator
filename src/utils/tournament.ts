@@ -27,7 +27,7 @@ export function getMatchesForRound(matches: Match[], round: number): Match[] {
 
 export function generateNextRoundMatches(
   completedMatches: Match[],
-  players: Player[],
+  _players: Player[],
   round: number
 ): Match[] {
   // Get all winners from completed round in order
