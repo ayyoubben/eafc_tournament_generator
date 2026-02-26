@@ -38,6 +38,7 @@ export default function App() {
   return (
     <Box sx={{
       minHeight: '100vh',
+      flexDirection: 'column',
       background: 'linear-gradient(135deg, #0A0E1A 0%, #0D1B2A 50%, #0A1628 100%)',
       color: 'text.primary',
     }}>
@@ -107,6 +108,39 @@ export default function App() {
             />
           </Box>
         )}
+
+        {/* Footer */}
+        <Box
+          sx={{
+            textAlign: 'center',
+            py: 2,
+            borderTop: '1px solid rgba(255,255,255,0.05)',
+            mt: 'auto',
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              letterSpacing: 2,
+              fontSize: '0.7rem',
+            }}
+          >
+            CREATED BY{' '}
+            <Box
+              component="span"
+              sx={{
+                color: 'primary.main',
+                fontWeight: 700,
+                fontFamily: 'Rajdhani',
+                fontSize: '0.85rem',
+                letterSpacing: 3,
+              }}
+            >
+              AYYOUB BENHOCINE
+            </Box>
+          </Typography>
+        </Box>
       </Box>
 
       {/* Progress bar */}
