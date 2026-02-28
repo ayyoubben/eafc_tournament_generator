@@ -103,6 +103,17 @@ export function distributeTeamsWithPots(players: Player[], teams: Team[]): Playe
   const pot1 = shuffleArray(teams.filter(t => t.pot === 1));
   const pot2 = shuffleArray(teams.filter(t => t.pot === 2));
   const teamsPerPlayer = teams.length / players.length;
+
+  // Edge case: 1 team per player — just give each player one team
+  // alternating from pot1 and pot2
+  if (teamsPerPlayer === 1) {
+    const allTeams = shuffleArray([...pot1, ...pot2]);
+    return players.map((player, index) => ({
+      ...player,
+      teamIds: [allTeams[index].id],
+    }));
+  }
+
   const perPot = teamsPerPlayer / 2;
 
   return players.map((player, index) => ({
@@ -131,6 +142,7 @@ export function distributeTeamsRandomly(players: Player[], teams: Team[]): Playe
 
 export function generateKnockoutMatches(players: Player[], teams: Team[]): Match[] {
   const usePots = teams.some(t => t.pot);
+  const teamsPerPlayer = teams.length / players.length;
 
   if (!usePots || teams.length === 2) {
     const entries: { teamId: string; playerId: string }[] = [];
@@ -139,11 +151,34 @@ export function generateKnockoutMatches(players: Player[], teams: Team[]): Match
         entries.push({ teamId, playerId: player.id });
       });
     });
-    const shuffled = shuffleArray(entries);
-    return buildMatches(shuffled, 1);
+    return buildMatches(shuffleArray(entries), 1);
   }
 
-  // Build per-player pot buckets, shuffled individually
+  // Edge case: 1 team per player — simple pot1 vs pot2, no alternating needed
+  if (teamsPerPlayer === 1) {
+    const pot1Entries = shuffleArray(
+      players.flatMap(p =>
+        p.teamIds
+          .filter(tid => teams.find(t => t.id === tid)?.pot === 1)
+          .map(tid => ({ teamId: tid, playerId: p.id }))
+      )
+    );
+    const pot2Entries = shuffleArray(
+      players.flatMap(p =>
+        p.teamIds
+          .filter(tid => teams.find(t => t.id === tid)?.pot === 2)
+          .map(tid => ({ teamId: tid, playerId: p.id }))
+      )
+    );
+    const paired: { teamId: string; playerId: string }[] = [];
+    pot1Entries.forEach((entry, i) => {
+      paired.push(entry);
+      paired.push(pot2Entries[i]);
+    });
+    return buildMatches(paired, 1);
+  }
+
+  // Normal case: multiple teams per player — alternate by player
   const pot1ByPlayer: Record<string, { teamId: string; playerId: string }[]> = {};
   const pot2ByPlayer: Record<string, { teamId: string; playerId: string }[]> = {};
 
@@ -160,26 +195,19 @@ export function generateKnockoutMatches(players: Player[], teams: Team[]): Match
     );
   });
 
-  // Shuffle player order for variety
   const shuffledPlayers = shuffleArray([...players]);
-  const teamsPerPlayer = teams.length / players.length;
-  const matchesPerPlayerPair = teamsPerPlayer / 2; // each player contributes this many pot1 teams
-
+  const matchesPerPlayerPair = teamsPerPlayer / 2;
   const paired: { teamId: string; playerId: string }[] = [];
 
-  // For each "slot", alternate: playerA pot1 vs playerB pot2, then playerB pot1 vs playerA pot2
-  // Works for 2+ players by cycling through player pairs
   for (let slot = 0; slot < matchesPerPlayerPair; slot++) {
     for (let pi = 0; pi < shuffledPlayers.length; pi++) {
       const playerA = shuffledPlayers[pi];
       const playerB = shuffledPlayers[(pi + 1) % shuffledPlayers.length];
-
       const p1Team = pot1ByPlayer[playerA.id].pop();
       const p2Team = pot2ByPlayer[playerB.id].pop();
-
       if (p1Team && p2Team) {
-        paired.push(p1Team); // home: playerA pot1
-        paired.push(p2Team); // away: playerB pot2
+        paired.push(p1Team);
+        paired.push(p2Team);
       }
     }
   }
